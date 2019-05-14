@@ -1,3 +1,7 @@
+// Copyright 2019 Cytown.  All rights reserved.
+// Use of this source code is governed by a MIT style
+// license that can be found in the LICENSE file.
+
 package gintool
 
 import (
@@ -36,8 +40,8 @@ type GinEngine struct {
 	template multitemplate.Renderer
 }
 
-var stdlog zerolog.Logger = zlog.Output(os.Stdout)
-var errlog zerolog.Logger = zlog.Output(os.Stderr)
+var stdlog = zlog.Output(os.Stdout)
+var errlog = zlog.Output(os.Stderr)
 
 func fileInfo(path string) os.FileInfo {
 	fi, err := os.Stat(path)
@@ -211,18 +215,19 @@ func NewGin(path string) (*GinEngine, error) {
 		stdlog.Level(zerolog.DebugLevel)
 	}
 
-	if logs != nil {
-		stdlog = stdlog.Output(
-			zerolog.ConsoleWriter{
-				Out:     logs,
-				NoColor: false,
-			},
-		)
+	if logs == nil {
+		logs = os.Stdout
 	}
+	stdlog = stdlog.Output(
+		zerolog.ConsoleWriter{
+			Out:     logs,
+			NoColor: false,
+		},
+	)
 
 	gin.DefaultWriter = stdlog
 
-	logs = errlog
+	logs = nil
 	if len(ge.errorlog) > 0 {
 		if ge.errorlog != ge.logfile {
 			logfile, err = os.OpenFile(ge.errorlog, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0666)
@@ -240,16 +245,18 @@ func NewGin(path string) (*GinEngine, error) {
 				logs = io.MultiWriter(logfile)
 			}
 		}
-		errlog = errlog.Output(
-			zerolog.ConsoleWriter{
-				Out:     logs,
-				NoColor: false,
-			},
-		)
 	}
+	if logs == nil {
+		logs = os.Stderr
+	}
+	errlog = errlog.Output(
+		zerolog.ConsoleWriter{
+			Out:     logs,
+			NoColor: false,
+		},
+	)
 	gin.DefaultErrorWriter = errlog
 
-	engine.Use(ginRecovery(ge.errors))
 	zerolog.SetGlobalLevel(zerolog.InfoLevel)
 	if gin.IsDebugging() {
 		zerolog.SetGlobalLevel(zerolog.DebugLevel)
@@ -261,6 +268,7 @@ func NewGin(path string) (*GinEngine, error) {
 		Logger: &stdlog,
 		UTC:    true,
 	}))
+	engine.Use(ginRecovery(ge.errors))
 	engine.Use(UseSession())
 	return ge, nil
 }
@@ -278,8 +286,8 @@ func resetDefault() {
 }
 
 // ShutDown will shutdown the engine
-func (g *GinEngine) ShutDown() (err error) {
-	if g.server == nil {
+func (ge *GinEngine) ShutDown() (err error) {
+	if ge.server == nil {
 		return fmt.Errorf("server not start")
 	}
 	defer func() {
@@ -287,84 +295,84 @@ func (g *GinEngine) ShutDown() (err error) {
 			return
 		}
 		stdlog.Info().Msgf("**********************")
-		stdlog.Info().Msgf("* shutdown %s *", g.address)
+		stdlog.Info().Msgf("* shutdown %s *", ge.address)
 		stdlog.Info().Msgf("**********************\n")
 	}()
-	return g.server.Shutdown(context.Background())
+	return ge.server.Shutdown(context.Background())
 }
 
 // Start just start the engine, tls will according to the configuration file
-func (g *GinEngine) Start() (ret error) {
-	for mapping, path := range g.statics {
+func (ge *GinEngine) Start() (ret error) {
+	for mapping, path := range ge.statics {
 		path, err := filepath.Abs(path)
 		if err != nil {
 			return err
 		}
 		//fi := fileInfo(path)
 		//fmt.Println(mapping, path, " ==== ", fi)
-		g.Engine.Static(mapping, path)
+		ge.Engine.Static(mapping, path)
 	}
-	for mapping, path := range g.staticFs {
+	for mapping, path := range ge.staticFs {
 		path, err := filepath.Abs(path)
 		if err != nil {
 			return err
 		}
 		//fi := fileInfo(path)
 		//fmt.Println(mapping, path, " ==== ", fi)
-		g.Engine.StaticFile(mapping, path)
+		ge.Engine.StaticFile(mapping, path)
 	}
 
 	// TODO add template path
 
 	// add error handling
-	for key, value := range g.errors {
-		g.AddTemplates(errorName(key), value)
+	for key, value := range ge.errors {
+		ge.AddTemplates(errorName(key), value)
 	}
-	stdlog.Debug().Msgf("errors : %s %v", g.errors[http.StatusNotFound], g.errors)
-	if _, ok := g.errors[http.StatusNotFound]; ok {
-		g.Engine.NoRoute(func(c *gin.Context) {
+	stdlog.Debug().Msgf("errors : %s %v", ge.errors[http.StatusNotFound], ge.errors)
+	if _, ok := ge.errors[http.StatusNotFound]; ok {
+		ge.Engine.NoRoute(func(c *gin.Context) {
 			c.HTML(http.StatusNotFound, errorName(http.StatusNotFound), nil)
 		})
 	}
-	g.Engine.HTMLRender = g.template
+	ge.Engine.HTMLRender = ge.template
 
 	stdlog.Info().Msgf("| starting gin server |")
 	stdlog.Info().Msgf("=======================")
-	stdlog.Info().Msgf("| tls     : %v", g.certFile != "")
+	stdlog.Info().Msgf("| tls     : %v", ge.certFile != "")
 	stdlog.Info().Msgf("| mode    : %s", gin.Mode())
-	stdlog.Info().Msgf("| address : %s", g.address)
-	if g.logfile != "" {
-		stdlog.Info().Msgf("| logfile : %s", g.logfile)
+	stdlog.Info().Msgf("| address : %s", ge.address)
+	if ge.logfile != "" {
+		stdlog.Info().Msgf("| logfile : %s", ge.logfile)
 	}
-	if g.errorlog != "" {
-		stdlog.Info().Msgf("| errorlog: %s", g.errorlog)
+	if ge.errorlog != "" {
+		stdlog.Info().Msgf("| errorlog: %s", ge.errorlog)
 	}
-	if len(g.statics) > 0 {
-		stdlog.Info().Msgf("| statics : %v", g.statics)
+	if len(ge.statics) > 0 {
+		stdlog.Info().Msgf("| statics : %v", ge.statics)
 	}
-	if len(g.staticFs) > 0 {
-		stdlog.Info().Msgf("| staticFs: %v", g.staticFs)
+	if len(ge.staticFs) > 0 {
+		stdlog.Info().Msgf("| staticFs: %v", ge.staticFs)
 	}
-	if len(g.errors) > 0 {
-		stdlog.Info().Msgf("| errors  : %v", g.errors)
+	if len(ge.errors) > 0 {
+		stdlog.Info().Msgf("| errors  : %v", ge.errors)
 	}
 	stdlog.Info().Msgf("=======================")
 	//defer func() { debugPrintError(err) }()
 
-	address := g.address
+	address := ge.address
 	runtype := "HTTP"
-	if g.certFile != "" {
+	if ge.certFile != "" {
 		runtype = "HTTPS"
 	}
 	stdlog.Info().Msgf("Listening and serving %s on %s\n", runtype, address)
-	server := http.Server{Addr: address, Handler: g.Engine}
+	server := http.Server{Addr: address, Handler: ge.Engine}
 
 	defer func() {
-		g.server = nil
+		ge.server = nil
 	}()
-	g.server = &server
-	if g.certFile != "" {
-		ret = server.ListenAndServeTLS(g.certFile, g.keyFile)
+	ge.server = &server
+	if ge.certFile != "" {
+		ret = server.ListenAndServeTLS(ge.certFile, ge.keyFile)
 	} else {
 		ret = server.ListenAndServe()
 	}
@@ -372,7 +380,7 @@ func (g *GinEngine) Start() (ret error) {
 }
 
 func ginRecovery(errors map[int]string) gin.HandlerFunc {
-	return RecoveryWithWriter(func(c *gin.Context, err interface{}) {
+	return RecoveryWithWriter(func(c *gin.Context) {
 		if _, ok := errors[c.Writer.Status()]; ok {
 			c.HTML(c.Writer.Status(), errorName(c.Writer.Status()), gin.H{
 				"errors": errors,
@@ -381,13 +389,11 @@ func ginRecovery(errors map[int]string) gin.HandlerFunc {
 	})
 }
 
-func RecoveryWithWriter(f func(c *gin.Context, err interface{})) gin.HandlerFunc {
+func RecoveryWithWriter(f func(c *gin.Context)) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		defer func() {
 			if err := recover(); err != nil {
-				stack := errors.Wrap(err, 0)
-				msg := "[" + stack.Error() + "]"
-
+				stack := errors.Wrap(err, 2)
 				status := http.StatusInternalServerError
 				// Check for a broken connection, as it is not really a
 				// condition that warrants a panic stack trace.
@@ -396,26 +402,15 @@ func RecoveryWithWriter(f func(c *gin.Context, err interface{})) gin.HandlerFunc
 					if se, ok := ne.Err.(*os.SyscallError); ok {
 						if strings.Contains(strings.ToLower(se.Error()), "broken pipe") || strings.Contains(strings.ToLower(se.Error()), "connection reset by peer") {
 							brokenPipe = true
-							msg = "[broken pipe]"
+							err = errors.New("[broken pipe]")
 							status = http.StatusGatewayTimeout
 						}
 					}
 				}
-				// save log to stdlog
-				dumplogger := stdlog.With().
-					Int("status", status).
-					Str("method", c.Request.Method).
-					Str("path", c.Request.URL.Path).
-					Str("ip", c.ClientIP()).
-					Dur("latency", 0).
-					Str("user-agent", c.Request.UserAgent()).
-					Logger()
 
-				dumplogger.Error().Msg(msg)
+				_ = c.AbortWithError(status, stack)
 
-				c.AbortWithStatus(status)
-
-				if (brokenPipe) {
+				if brokenPipe {
 					return
 				}
 
@@ -437,7 +432,7 @@ func RecoveryWithWriter(f func(c *gin.Context, err interface{})) gin.HandlerFunc
 						c.Request.URL.Path, err, stack.Stack())
 				}
 
-				f(c, err)
+				f(c)
 			}
 		}()
 		c.Next() // execute all the handlers
@@ -447,8 +442,8 @@ func RecoveryWithWriter(f func(c *gin.Context, err interface{})) gin.HandlerFunc
 // HandleSession will create a new session with key map to store the value for future use.
 // For example, you can store the language define in session then use it in template or i18n.
 // Warning: you should not use session in middleware because it will be called after the middleware
-func (g *GinEngine) HandleSession(method string, path string, handlerFunc gin.HandlerFunc) gin.IRoutes {
-	return g.Engine.Handle(method, path, func(c *gin.Context) {
+func (ge *GinEngine) HandleSession(method string, path string, handlerFunc gin.HandlerFunc) gin.IRoutes {
+	return ge.Engine.Handle(method, path, func(c *gin.Context) {
 		WithSession(func() {
 			handlerFunc(c)
 		})()

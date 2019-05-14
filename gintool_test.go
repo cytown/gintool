@@ -1,15 +1,19 @@
+// Copyright 2019 Cytown.  All rights reserved.
+// Use of this source code is governed by a MIT style
+// license that can be found in the LICENSE file.
+
 package gintool
 
 import (
 	"crypto/tls"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"reflect"
 	"testing"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	zlog "github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -240,14 +244,14 @@ func TestGinEngine_Start(t *testing.T) {
 					tt.init(g)
 				}
 				err := g.Start()
-				log.Println("start return", err)
+				zlog.Printf("start return %v", err)
 				if (err != nil) != tt.wantErr && !time.Now().After(t1.Add(20 * time.Millisecond)) {
 					t.Errorf("GinEngine.Start() errors = %v, wantErr %v", err, tt.wantErr)
 				}
 			}()
 
 			time.Sleep(10 * time.Millisecond)
-			log.Println("started: ", g.server)
+			zlog.Printf("started: %v", g.server)
 			for idx, url := range tt.fields.url {
 				if url != "" {
 					//http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
@@ -263,7 +267,39 @@ func TestGinEngine_Start(t *testing.T) {
 				}
 			}
 			time.Sleep(10 * time.Millisecond)
-			log.Println("shutdown: ", g.ShutDown())
+			zlog.Printf("shutdown: %v", g.ShutDown())
 		})
 	}
+	t.Run("config file test", func(t *testing.T) {
+		g, _ := NewGin("testdata/test.conf")
+		t1 := time.Now()
+		g.HandleSession("GET", "/", func(c *gin.Context) {
+			SessionSet("hello", "world")
+			assert.Equal(t, SessionGet("hello"), "world")
+			panic("test only")
+		})
+		go func() {
+			err := g.Start()
+			zlog.Printf("start return %v", err)
+			if (err != nil) && !time.Now().After(t1.Add(20 * time.Millisecond)) {
+				t.Errorf("GinEngine.Start() errors = %v", err)
+			}
+		}()
+		time.Sleep(10 * time.Millisecond)
+		zlog.Printf("started: %v", g.server)
+		url := "https://localhost:8089/"
+		//http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+		tr := &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		}
+		client := &http.Client{Transport: tr}
+		//_, err := client.Get("https://golang.org/")
+		res, _ := client.Get(url)
+		resp, _ := ioutil.ReadAll(res.Body)
+		want, _ := ioutil.ReadFile("testdata/error/500.html")
+		assert.Equal(t, 500, res.StatusCode)
+		assert.Equal(t, want, resp)
+		time.Sleep(10 * time.Millisecond)
+		zlog.Printf("shutdown: %v", g.ShutDown())
+	})
 }

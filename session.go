@@ -1,38 +1,47 @@
+// Copyright 2019 Cytown.  All rights reserved.
+// Use of this source code is governed by a MIT style
+// license that can be found in the LICENSE file.
+
 package gintool
 
 import (
 	"github.com/gin-gonic/gin"
-	zlog "github.com/rs/zerolog/log"
 	"github.com/v2pro/plz/gls"
 )
 
-const SESSION_NAME string = "_session_"
+const session_name string = "_session_"
+
 type Session struct {
 	data map[string]interface{}
 }
 
+// GetSession get the Session, if not exist return new
 func GetSession() *Session {
-	if v := gls.Get(SESSION_NAME); v != nil {
+	if v := gls.Get(session_name); v != nil {
 		return v.(*Session)
 	}
+	// should not happen, only will occur when user not call WithSession or UseSession
 	s := NewSession()
 	return s
 }
 
+// NewSession create new Session
 func NewSession() *Session {
 	s := &Session{
 		data: map[string]interface{}{},
 	}
 	gls.GoID()
-	gls.Set(SESSION_NAME, s)
+	gls.Set(session_name, s)
 	return s
 }
 
+// SessionGet return the value stored in Session
 func SessionGet(name string) interface{} {
 	s := GetSession()
 	return s.data[name]
 }
 
+// SessionSet store the value to Session
 func SessionSet(name string, val interface{}) {
 	s := GetSession()
 	s.data[name] = val
@@ -44,7 +53,7 @@ func SessionSet(name string, val interface{}) {
 func UseSession() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		WithSession(func() {
-			zlog.Print("session initialed ", gls.GoID())
+			stdlog.Debug().Msgf("session initialed %v", gls.GoID())
 			c.Next()
 		})()
 	}

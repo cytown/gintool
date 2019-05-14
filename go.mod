@@ -20,10 +20,10 @@ require (
 	gopkg.in/yaml.v2 v2.2.2
 )
 
-replace github.com/ugorji/go => /Users/billy/go/src/github.com/ugorji/go
+replace github.com/ugorji/go => /go/src/github.com/ugorji/go
 
 replace golang.org/x/tools@v0.0.0-20190424220101-1e8e1cfdf96b => golang.org/x/tools v0.0.0-20190509153222-73554e0f7805
 
-replace github.com/gin-contrib/logger => /Users/billy/go/src/github.com/gin-contrib/logger
+replace github.com/gin-contrib/logger => /go/src/github.com/gin-contrib/logger
 
-replace github.com/gin-contrib/multitemplate => /Users/billy/go/src/github.com/gin-contrib/multitemplate
+replace github.com/gin-contrib/multitemplate => /go/src/github.com/gin-contrib/multitemplate

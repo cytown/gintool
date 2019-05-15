@@ -10,6 +10,7 @@ import (
 )
 
 const session_name string = "_session_"
+const config_name string = "_config_"
 
 type Session struct {
 	data map[string]interface{}
@@ -20,18 +21,19 @@ func GetSession() *Session {
 	if v := gls.Get(session_name); v != nil {
 		return v.(*Session)
 	}
-	// should not happen, only will occur when user not call WithSession or UseSession
-	s := NewSession()
-	return s
+	return nil
 }
 
 // NewSession create new Session
 func NewSession() *Session {
-	s := &Session{
-		data: map[string]interface{}{},
-	}
 	gls.GoID()
-	gls.Set(session_name, s)
+	var s *Session
+	if s = GetSession(); s == nil {
+		s = &Session{
+			data: map[string]interface{}{},
+		}
+		gls.Set(session_name, s)
+	}
 	return s
 }
 
@@ -45,15 +47,17 @@ func SessionGet(name string) interface{} {
 func SessionSet(name string, val interface{}) {
 	s := GetSession()
 	s.data[name] = val
+	//glsSetSession(s)
 }
 
 // UseSession is a middleware which generate the session in gorouting
 // Please be sure that all middleware use session must called after this middleware
 // GinEngine default will use this middleware
-func UseSession() gin.HandlerFunc {
+func UseSession(config *Config) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		WithSession(func() {
-			stdlog.Debug().Msgf("session initialed %v", gls.GoID())
+			config.stdlog.Debug().Msgf("session initialed %v %v", gls.GoID(), config)
+			SessionSet(config_name, &config)
 			c.Next()
 		})()
 	}
@@ -65,4 +69,14 @@ func WithSession(f func()) func() {
 		NewSession()
 		f()
 	})
+}
+
+// SessionConfig return the saved *Config, it must be called after Use(UseSession(*Config))
+func SessionConfig() *Config {
+	t := SessionGet(config_name)
+	tt, ok := t.(**Config)
+	if ok {
+		return *tt
+	}
+	return nil
 }

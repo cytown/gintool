@@ -3,9 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <title>Not Found</title>
-    <script type="text/javascript" src="//qzonestyle.gtimg.cn/qzone/hybrid/app/404/search_children.js" charset="utf-8" homePageUrl="/" homePageName="回到我的主页"></script>
+    <script src="/html/js/vue.js"></script>
+{{/*    <script src="https://cdn.jsdelivr.net/npm/vue"></script>*/}}
+{{/*    <script type="text/javascript" src="//qzonestyle.gtimg.cn/qzone/hybrid/app/404/search_children.js" charset="utf-8" homePageUrl="/" homePageName="回到我的主页"></script>*/}}
 </head>
 <body>
 Huston, we lost them.
+<div id="app">
+    ${ msg }
+
+</div>
+<script>
+    const app = new Vue({
+        delimiters: ['${', '}'],
+        el: '#app',
+        data: {
+            msg: 'Hello World!!'
+        }
+    })
+</script>
+
 </body>
 </html>

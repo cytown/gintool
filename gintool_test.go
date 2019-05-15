@@ -8,7 +8,6 @@ import (
 	"crypto/tls"
 	"io/ioutil"
 	"net/http"
-	"reflect"
 	"testing"
 	"time"
 
@@ -26,6 +25,7 @@ func TestNewGin(t *testing.T) {
 		args    args
 		want    *GinEngine
 		wantErr bool
+		check   func(*GinEngine, *GinEngine)
 	}{
 		{
 			name: "empty file",
@@ -33,17 +33,20 @@ func TestNewGin(t *testing.T) {
 				path: "",
 			},
 			want: &GinEngine{
-				address: ":8080",
-				statics: map[string]string{
-					"/html":   "static",
-					"/images": "static/images",
+				config: &Config{
+					address: ":8080",
+					statics: map[string]string{
+						"/html":   "static",
+						"/images": "static/images",
+					},
+					staticFs: map[string]string{},
+					errors: map[int]string{
+						404: "error/404.html",
+						500: "error/500.html",
+					},
+					logfile:  "log/gin.log",
+					errorlog: "log/gin.log",
 				},
-				errors: map[int]string{
-					404: "error/404.html",
-					500: "error/500.html",
-				},
-				logfile:  "log/gin.log",
-				errorlog: "log/gin.log",
 			},
 			wantErr: false,
 		},
@@ -53,24 +56,32 @@ func TestNewGin(t *testing.T) {
 				path: "testdata/gin.conf",
 			},
 			want: &GinEngine{
-				address: "localhost:8088",
-				statics: map[string]string{
-					"/html":   "testdata/static",
-					"/images": "testdata/static/images",
+				config: &Config{
+					address: "localhost:8088",
+					statics: map[string]string{
+						"/html":   "testdata/static",
+						"/images": "testdata/static/images",
+					},
+					staticFs: map[string]string{
+						"/favicon.ico": "testdata/static/images/favicon.png",
+					},
+					errors: map[int]string{
+						404: "testdata/error/404.html",
+						500: "testdata/error/500.html",
+					},
+					logfile:  "/tmp/gin.log",
+					errorlog: "/tmp/gin_error.log",
+					keyFile:  "testdata/keyfile",
+					certFile: "testdata/certfile",
+					other:map[interface{}]interface{} {
+						"hello":"world",
+					},
 				},
-				staticFs: map[string]string{
-					"/favicon.ico": "testdata/static/images/favicon.png",
-				},
-				errors: map[int]string{
-					404: "testdata/error/404.html",
-					500: "testdata/error/500.html",
-				},
-				logfile:  "/tmp/gin.log",
-				errorlog: "/tmp/gin_error.log",
-				keyFile:  "testdata/keyfile",
-				certFile: "testdata/certfile",
 			},
 			wantErr: false,
+			check: func(want, act *GinEngine) {
+				assert.Equal(t, act.config.Get("hello"), "world")
+			},
 		},
 		{
 			name: "not exist gin.conf file",
@@ -99,11 +110,15 @@ func TestNewGin(t *testing.T) {
 			if got == nil {
 				return
 			}
-			got.Engine = tt.want.Engine
-			got.template = tt.want.template
+			got.config.stdlog = tt.want.config.stdlog
+			got.config.errlog = tt.want.config.errlog
+			//got.config.other = tt.want.config.other
+			//got.Engine = tt.want.Engine
+			//got.template = tt.want.template
 			//fmt.Println(tt.want.statics, got.statics)
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("NewGin() = \n%v\n, want \n%v", got, tt.want)
+			assert.Equal(t, got.config, tt.want.config)
+			if tt.check != nil {
+				tt.check(got, tt.want)
 			}
 		})
 	}
@@ -210,7 +225,7 @@ func TestGinEngine_Start(t *testing.T) {
 				},
 			},
 			func(g *GinEngine) {
-				g.Engine.Use(ginRecovery(map[int]string{}))
+				g.Engine.Use(ginRecovery(map[int]string{}, g.config))
 				g.Engine.GET("/", func(c *gin.Context) {
 					panic("test only")
 				})
@@ -228,15 +243,17 @@ func TestGinEngine_Start(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			g := &GinEngine{
-				Engine:   tt.fields.Engine,
-				address:  tt.fields.address,
-				statics:  tt.fields.statics,
-				staticFs: tt.fields.staticFs,
-				errors:   tt.fields.error,
-				logfile:  tt.fields.logfile,
-				errorlog: tt.fields.errorlog,
-				certFile: tt.fields.certFile,
-				keyFile:  tt.fields.keyFile,
+				Engine: tt.fields.Engine,
+				config: &Config{
+					address:  tt.fields.address,
+					statics:  tt.fields.statics,
+					staticFs: tt.fields.staticFs,
+					errors:   tt.fields.error,
+					logfile:  tt.fields.logfile,
+					errorlog: tt.fields.errorlog,
+					certFile: tt.fields.certFile,
+					keyFile:  tt.fields.keyFile,
+				},
 			}
 			t1 := time.Now()
 			go func() {
@@ -274,19 +291,22 @@ func TestGinEngine_Start(t *testing.T) {
 		g, _ := NewGin("testdata/test.conf")
 		t1 := time.Now()
 		g.HandleSession("GET", "/", func(c *gin.Context) {
+			config := SessionConfig()
+			assert.NotNil(t, config, "config should not be nil")
+			assert.Equal(t, "localhost:8089", config.address)
 			SessionSet("hello", "world")
 			assert.Equal(t, SessionGet("hello"), "world")
 			panic("test only")
 		})
 		go func() {
 			err := g.Start()
-			zlog.Printf("start return %v", err)
+			g.config.stdlog.Printf("start return %v", err)
 			if (err != nil) && !time.Now().After(t1.Add(20 * time.Millisecond)) {
 				t.Errorf("GinEngine.Start() errors = %v", err)
 			}
 		}()
 		time.Sleep(10 * time.Millisecond)
-		zlog.Printf("started: %v", g.server)
+		g.config.stdlog.Printf("started: %v", g.server)
 		url := "https://localhost:8089/"
 		//http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 		tr := &http.Transport{
@@ -300,6 +320,6 @@ func TestGinEngine_Start(t *testing.T) {
 		assert.Equal(t, 500, res.StatusCode)
 		assert.Equal(t, want, resp)
 		time.Sleep(10 * time.Millisecond)
-		zlog.Printf("shutdown: %v", g.ShutDown())
+		g.config.stdlog.Printf("shutdown: %v", g.ShutDown())
 	})
 }

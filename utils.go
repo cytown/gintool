@@ -4,9 +4,15 @@
 
 package gintool
 
-import "fmt"
+import (
+	"fmt"
+	"os"
+)
 
 func extract(out interface{}, names ...string) (interface{}, error) {
+	if out == nil {
+		return nil, fmt.Errorf("can't extract nil")
+	}
 	var tmp, ok = out.(map[interface{}]interface{})
 	if !ok {
 		return nil, fmt.Errorf("%v is not a map", out)
@@ -30,4 +36,23 @@ func extract(out interface{}, names ...string) (interface{}, error) {
 
 func errorName(code int) string {
 	return fmt.Sprintf("__E_%d", code)
+}
+
+func fileInfo(path string) os.FileInfo {
+	fi, err := os.Stat(path)
+	if err != nil {
+		return nil
+	}
+	return fi
+}
+
+func isFile(path string) error {
+	fi := fileInfo(path)
+	if fi == nil {
+		return fmt.Errorf("not found %v", path)
+	}
+	if !fi.Mode().IsRegular() {
+		return fmt.Errorf("not a file %v", path)
+	}
+	return nil
 }

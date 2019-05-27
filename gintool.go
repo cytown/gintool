@@ -25,6 +25,7 @@ import (
 
 // GinEngine is the configuration of gin.Engine
 type GinEngine struct {
+	// Engine is the exposed *gin.Engine
 	Engine   *gin.Engine
 	server   *http.Server
 	template multitemplate.Renderer
@@ -132,6 +133,7 @@ func NewGin(path string) (*GinEngine, error) {
 	return ge, nil
 }
 
+// AddTemplates to add templates with the specified name
 func (ge *GinEngine) AddTemplates(name string, files ...string) {
 	ge.template.AddFromFiles(name, files...)
 }
@@ -239,6 +241,9 @@ func (ge *GinEngine) Start() (ret error) {
 		ret = server.ListenAndServeTLS(c.certFile, c.keyFile)
 	} else {
 		ret = server.ListenAndServe()
+	}
+	if ret == http.ErrServerClosed {
+		ret = nil
 	}
 	return
 }

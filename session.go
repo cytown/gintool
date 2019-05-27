@@ -12,6 +12,7 @@ import (
 const session_name string = "_session_"
 const config_name string = "_config_"
 
+// Session can be used in app started with WithSession or UseSession
 type Session struct {
 	data map[string]interface{}
 }

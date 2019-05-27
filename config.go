@@ -169,6 +169,7 @@ func parseFile(path string) (*Config, error) {
 	return c, nil
 }
 
+// Get return the saved other configuration with key/value mapping
 func (c *Config) Get(key ...string) (ret interface{}) {
 	ret, _ = extract(c.other, key...)
 	return

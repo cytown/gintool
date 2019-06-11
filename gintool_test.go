@@ -66,9 +66,10 @@ func TestNewGin(t *testing.T) {
 						"/favicon.ico": "testdata/static/images/favicon.png",
 					},
 					errors: map[int]string{
-						404: "testdata/error/404.html",
-						500: "testdata/error/500.html",
+						404: "error/404.html",
+						500: "error/500.html",
 					},
+					templates:"testdata/templates",
 					logfile:  "/tmp/gin.log",
 					errorlog: "/tmp/gin_error.log",
 					keyFile:  "testdata/keyfile",
@@ -316,7 +317,7 @@ func TestGinEngine_Start(t *testing.T) {
 		//_, err := client.Get("https://golang.org/")
 		res, _ := client.Get(url)
 		resp, _ := ioutil.ReadAll(res.Body)
-		want, _ := ioutil.ReadFile("testdata/error/500.html")
+		want, _ := ioutil.ReadFile("testdata/templates/error/500.html")
 		assert.Equal(t, 500, res.StatusCode)
 		assert.Equal(t, want, resp)
 		time.Sleep(10 * time.Millisecond)

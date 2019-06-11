@@ -15,8 +15,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/FlowerWrong/plushgin"
 	"github.com/gin-contrib/logger"
-	"github.com/gin-contrib/multitemplate"
 	"github.com/gin-gonic/gin"
 	"github.com/go-errors/errors"
 	"github.com/rs/zerolog"
@@ -28,7 +28,7 @@ type GinEngine struct {
 	// Engine is the exposed *gin.Engine
 	Engine   *gin.Engine
 	server   *http.Server
-	template multitemplate.Renderer
+	template *plushgin.Plush2Render
 	config   *Config
 }
 
@@ -56,7 +56,7 @@ func NewGin(path string) (*GinEngine, error) {
 		config: c,
 	}
 
-	ge.template = multitemplate.NewRenderer()
+	ge.template = plushgin.Default()
 	gin.ForceConsoleColor()
 	var logs io.Writer
 	var logfile *os.File
@@ -83,7 +83,7 @@ func NewGin(path string) (*GinEngine, error) {
 			Out:     logs,
 			NoColor: false,
 		},
-	)
+	).With().Caller().CallerWithSkipFrameCount(2).Logger()
 
 	gin.DefaultWriter = c.stdlog
 
@@ -114,7 +114,7 @@ func NewGin(path string) (*GinEngine, error) {
 			Out:     logs,
 			NoColor: false,
 		},
-	)
+	).With().Caller().CallerWithSkipFrameCount(2).Logger()
 	gin.DefaultErrorWriter = c.errlog
 
 	zerolog.SetGlobalLevel(zerolog.InfoLevel)
@@ -135,7 +135,7 @@ func NewGin(path string) (*GinEngine, error) {
 
 // AddTemplates to add templates with the specified name
 func (ge *GinEngine) AddTemplates(name string, files ...string) {
-	ge.template.AddFromFiles(name, files...)
+	//ge.template.Options..AddFromFiles(name, files...)
 }
 
 func resetDefault() {
@@ -188,18 +188,21 @@ func (ge *GinEngine) Start() (ret error) {
 		ge.Engine.StaticFile(mapping, path)
 	}
 
-	// TODO add template path
+	if c.templates != "" {
+		ge.template.Options.TemplateDir = c.templates
+	}
 
 	// add error handling
-	for key, value := range c.errors {
-		ge.AddTemplates(errorName(key), value)
-	}
+	//for key, value := range c.errors {
+	//	ge.AddTemplates(errorName(key), value)
+	//}
 	c.stdlog.Debug().Msgf("errors : %s %v", ge.config.errors[http.StatusNotFound], c.errors)
 	if _, ok := ge.config.errors[http.StatusNotFound]; ok {
 		ge.Engine.NoRoute(func(c *gin.Context) {
-			c.HTML(http.StatusNotFound, errorName(http.StatusNotFound), nil)
+			c.HTML(http.StatusNotFound, ge.config.errors[http.StatusNotFound], gin.H{})
 		})
 	}
+	ge.Engine.NoMethod()
 	ge.Engine.HTMLRender = ge.template
 
 	c.stdlog.Info().Msgf("| starting gin server |")
@@ -212,6 +215,9 @@ func (ge *GinEngine) Start() (ret error) {
 	}
 	if c.errorlog != "" {
 		c.stdlog.Info().Msgf("| errorlog: %s", c.errorlog)
+	}
+	if c.templates != "" {
+		c.stdlog.Info().Msgf("| templates: %s", c.templates)
 	}
 	if len(c.statics) > 0 {
 		c.stdlog.Info().Msgf("| statics : %v", c.statics)
@@ -248,10 +254,10 @@ func (ge *GinEngine) Start() (ret error) {
 	return
 }
 
-func ginRecovery(errors map[int]string, c *Config) gin.HandlerFunc {
-	return recoveryWithWriter(c, func(c *gin.Context) {
-		if _, ok := errors[c.Writer.Status()]; ok {
-			c.HTML(c.Writer.Status(), errorName(c.Writer.Status()), gin.H{
+func ginRecovery(errors map[int]string, cc *Config) gin.HandlerFunc {
+	return recoveryWithWriter(cc, func(c *gin.Context) {
+		if v, ok := errors[c.Writer.Status()]; ok {
+			c.HTML(c.Writer.Status(), v, gin.H{
 				"errors": errors,
 			})
 		}

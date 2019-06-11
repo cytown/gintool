@@ -18,18 +18,19 @@ import (
 
 // Config the configuration
 type Config struct {
-	address  string
-	mode     string
-	statics  map[string]string
-	staticFs map[string]string
-	errors   map[int]string
-	logfile  string
-	errorlog string
-	certFile string
-	keyFile  string
-	stdlog   zerolog.Logger
-	errlog   zerolog.Logger
-	other    interface{}
+	address   string
+	mode      string
+	statics   map[string]string
+	staticFs  map[string]string
+	errors    map[int]string
+	templates string
+	logfile   string
+	errorlog  string
+	certFile  string
+	keyFile   string
+	stdlog    zerolog.Logger
+	errlog    zerolog.Logger
+	other     interface{}
 }
 
 func initConfig() *Config {
@@ -116,6 +117,17 @@ func parseFile(path string) (*Config, error) {
 		//} else {
 		//fmt.Println("certfile", c.certFile)
 		//fmt.Println("keyfile", c.keyFile)
+	}
+	mm, err = extract(m, "templates")
+	if err == nil {
+		ss, ok := mm.(string)
+		if ok && ss != "" {
+			err := isDir(ss)
+			if err != nil {
+				return nil, err
+			}
+			c.templates = ss
+		}
 	}
 	mm, err = extract(m, "static")
 	if err == nil {

@@ -56,3 +56,14 @@ func isFile(path string) error {
 	}
 	return nil
 }
+
+func isDir(path string) error {
+	fi := fileInfo(path)
+	if fi == nil {
+		return fmt.Errorf("not found %v", path)
+	}
+	if !fi.Mode().IsDir() {
+		return fmt.Errorf("not a dir %v", path)
+	}
+	return nil
+}

@@ -15,12 +15,13 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/FlowerWrong/plushgin"
 	"github.com/gin-contrib/logger"
 	"github.com/gin-gonic/gin"
 	"github.com/go-errors/errors"
 	"github.com/rs/zerolog"
 	//zlog "github.com/rs/zerolog/log"
+
+	"github.com/cytown/gintool/plushgin"
 )
 
 // GinEngine is the configuration of gin.Engine

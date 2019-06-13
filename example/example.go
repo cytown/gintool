@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"syscall"
 
 	"github.com/gin-gonic/gin"
 	"github.com/v2pro/plz/gls"
@@ -25,7 +26,7 @@ func main() {
 	}
 	c := make(chan os.Signal, 1)
 	done := make(chan bool, 1)
-	signal.Notify(c, os.Interrupt, os.Kill)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	go func() {
 		<-c
 		//log.Printf("captured %v, stopping profiler and exiting..", sig)
@@ -45,7 +46,6 @@ func main() {
 	ge.Engine.GET("/", func(c *gin.Context) {
 		log.Println("session key test", gls.GoID(), gintool.SessionGet("test"))
 		panic("test")
-		c.JSON(200, []string{"test", gintool.SessionGet("test").(string)})
 	})
 	err = ge.Start()
 	if err != nil && err != http.ErrServerClosed {

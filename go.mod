@@ -1,18 +1,17 @@
 module github.com/cytown/gintool
 
 require (
-	github.com/FlowerWrong/plushgin v0.0.0-20171223094000-bad75070f0c8
 	github.com/fatih/structs v1.1.0 // indirect
 	github.com/gin-contrib/logger v0.0.1
 	github.com/gin-contrib/sse v0.1.0 // indirect
 	github.com/gin-gonic/gin v1.4.0
 	github.com/go-errors/errors v1.0.1
 	github.com/gobuffalo/helpers v0.0.0-20190506214229-8e6f634af7c3 // indirect
-	github.com/gobuffalo/plush v3.8.2+incompatible // indirect
+	github.com/gobuffalo/plush v3.8.2+incompatible
 	github.com/gobuffalo/uuid v2.0.5+incompatible // indirect
 	github.com/gobuffalo/validate v2.0.3+incompatible // indirect
 	github.com/gofrs/uuid v3.2.0+incompatible // indirect
-	github.com/hashicorp/golang-lru v0.5.1 // indirect
+	github.com/hashicorp/golang-lru v0.5.1
 	github.com/mattn/go-isatty v0.0.8 // indirect
 	github.com/rs/zerolog v1.14.3
 	github.com/serenize/snaker v0.0.0-20171204205717-a683aaf2d516 // indirect

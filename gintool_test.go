@@ -69,13 +69,13 @@ func TestNewGin(t *testing.T) {
 						404: "error/404.html",
 						500: "error/500.html",
 					},
-					templates:"testdata/templates",
-					logfile:  "/tmp/gin.log",
-					errorlog: "/tmp/gin_error.log",
-					keyFile:  "testdata/keyfile",
-					certFile: "testdata/certfile",
-					other:map[interface{}]interface{} {
-						"hello":"world",
+					templates: "testdata/templates",
+					logfile:   "/tmp/gin.log",
+					errorlog:  "/tmp/gin_error.log",
+					keyFile:   "testdata/keyfile",
+					certFile:  "testdata/certfile",
+					other: map[interface{}]interface{}{
+						"hello": "world",
 					},
 				},
 			},
@@ -263,7 +263,7 @@ func TestGinEngine_Start(t *testing.T) {
 				}
 				err := g.Start()
 				zlog.Printf("start return %v", err)
-				if (err != nil) != tt.wantErr && !time.Now().After(t1.Add(20 * time.Millisecond)) {
+				if (err != nil) != tt.wantErr && !time.Now().After(t1.Add(20*time.Millisecond)) {
 					t.Errorf("GinEngine.Start() errors = %v, wantErr %v", err, tt.wantErr)
 				}
 			}()
@@ -294,7 +294,7 @@ func TestGinEngine_Start(t *testing.T) {
 		g.HandleSession("GET", "/", func(c *gin.Context) {
 			config := SessionConfig()
 			assert.NotNil(t, config, "config should not be nil")
-			assert.Equal(t, "localhost:8089", config.address)
+			assert.Equal(t, "localhost:18089", config.address)
 			SessionSet("hello", "world")
 			assert.Equal(t, SessionGet("hello"), "world")
 			panic("test only")
@@ -302,13 +302,13 @@ func TestGinEngine_Start(t *testing.T) {
 		go func() {
 			err := g.Start()
 			g.config.stdlog.Printf("start return %v", err)
-			if (err != nil) && !time.Now().After(t1.Add(20 * time.Millisecond)) {
+			if (err != nil) && !time.Now().After(t1.Add(20*time.Millisecond)) {
 				t.Errorf("GinEngine.Start() errors = %v", err)
 			}
 		}()
 		time.Sleep(10 * time.Millisecond)
 		g.config.stdlog.Printf("started: %v", g.server)
-		url := "https://localhost:8089/"
+		url := "https://localhost:18089/"
 		//http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 		tr := &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},

@@ -34,10 +34,6 @@ func extract(out interface{}, names ...string) (interface{}, error) {
 	return nil, nil
 }
 
-func errorName(code int) string {
-	return fmt.Sprintf("__E_%d", code)
-}
-
 func fileInfo(path string) os.FileInfo {
 	fi, err := os.Stat(path)
 	if err != nil {

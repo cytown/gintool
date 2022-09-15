@@ -6,7 +6,6 @@ package gintool
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"os"
 
@@ -48,7 +47,7 @@ func parseFile(path string) (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
-	buf, err := ioutil.ReadFile(path)
+	buf, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
@@ -86,8 +85,11 @@ func parseFile(path string) (*Config, error) {
 	}
 	mm, err = extract(m, "mode")
 	if err == nil {
-		gin.SetMode(mm.(string))
-		//fmt.Println("mode:", mm)
+		c.mode = mm.(string)
+		if len(c.mode) != 0 {
+			gin.SetMode(c.mode)
+		}
+		fmt.Println("mode:", mm)
 	}
 	mm, err = extract(m, "tls", "certfile")
 	if err == nil {

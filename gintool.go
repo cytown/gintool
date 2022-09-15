@@ -14,6 +14,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/gin-contrib/logger"
 	"github.com/gin-gonic/gin"
@@ -56,6 +57,7 @@ func NewGin(path string) (*GinEngine, error) {
 		Engine: engine,
 		config: c,
 	}
+	fmt.Println("===", c)
 
 	ge.template = plushgin.Default()
 	gin.ForceConsoleColor()
@@ -125,10 +127,9 @@ func NewGin(path string) (*GinEngine, error) {
 		c.errlog.Level(zerolog.DebugLevel)
 	}
 
-	engine.Use(logger.SetLogger(logger.Config{
-		Logger: &c.stdlog,
-		UTC:    true,
-	}))
+	engine.Use(logger.SetLogger(logger.WithUTC(true), logger.WithLogger(func(cc *gin.Context, out io.Writer, latency time.Duration) zerolog.Logger {
+		return c.stdlog
+	})))
 	engine.Use(ginRecovery(c.errors, c))
 	engine.Use(UseSession(c))
 	return ge, nil

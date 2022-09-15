@@ -6,8 +6,9 @@ package gintool
 
 import (
 	"crypto/tls"
-	"io/ioutil"
+	"io"
 	"net/http"
+	"os"
 	"testing"
 	"time"
 
@@ -35,6 +36,7 @@ func TestNewGin(t *testing.T) {
 			want: &GinEngine{
 				config: &Config{
 					address: ":8080",
+					mode:    "release",
 					statics: map[string]string{
 						"/html":   "static",
 						"/images": "static/images",
@@ -58,6 +60,7 @@ func TestNewGin(t *testing.T) {
 			want: &GinEngine{
 				config: &Config{
 					address: "localhost:8088",
+					mode:    "debug",
 					statics: map[string]string{
 						"/html":   "testdata/static",
 						"/images": "testdata/static/images",
@@ -117,7 +120,7 @@ func TestNewGin(t *testing.T) {
 			//got.Engine = tt.want.Engine
 			//got.template = tt.want.template
 			//fmt.Println(tt.want.statics, got.statics)
-			assert.Equal(t, got.config, tt.want.config)
+			assert.Equal(t, tt.want.config, got.config)
 			if tt.check != nil {
 				tt.check(got, tt.want)
 			}
@@ -188,11 +191,11 @@ func TestGinEngine_Start(t *testing.T) {
 			nil,
 			false,
 			[]resp{
-				resp{
+				{
 					200,
 					"hello world",
 				},
-				resp{
+				{
 					200,
 					"hello world",
 				},
@@ -210,7 +213,7 @@ func TestGinEngine_Start(t *testing.T) {
 			nil,
 			false,
 			[]resp{
-				resp{
+				{
 					404,
 					"404 page not found",
 				},
@@ -233,7 +236,7 @@ func TestGinEngine_Start(t *testing.T) {
 			},
 			false,
 			[]resp{
-				resp{
+				{
 					500,
 					"",
 				},
@@ -279,7 +282,7 @@ func TestGinEngine_Start(t *testing.T) {
 					client := &http.Client{Transport: tr}
 					//_, err := client.Get("https://golang.org/")
 					res, _ := client.Get(url)
-					resp, _ := ioutil.ReadAll(res.Body)
+					resp, _ := io.ReadAll(res.Body)
 					assert.Equal(t, tt.wantRes[idx].code, res.StatusCode)
 					assert.Equal(t, tt.wantRes[idx].body, string(resp))
 				}
@@ -316,8 +319,8 @@ func TestGinEngine_Start(t *testing.T) {
 		client := &http.Client{Transport: tr}
 		//_, err := client.Get("https://golang.org/")
 		res, _ := client.Get(url)
-		resp, _ := ioutil.ReadAll(res.Body)
-		want, _ := ioutil.ReadFile("testdata/templates/error/500.html")
+		resp, _ := io.ReadAll(res.Body)
+		want, _ := os.ReadFile("testdata/templates/error/500.html")
 		assert.Equal(t, 500, res.StatusCode)
 		assert.Equal(t, want, resp)
 		time.Sleep(10 * time.Millisecond)

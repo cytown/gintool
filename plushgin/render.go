@@ -6,8 +6,8 @@
 package plushgin
 
 import (
-	"io/ioutil"
 	"net/http"
+	"os"
 	"path"
 
 	"github.com/gin-gonic/gin"
@@ -91,7 +91,7 @@ func (p *Plush2Render) getCache(name string) ([]byte, error) {
 	if buf == nil || gin.Mode() == "debug" {
 		filename := path.Join(p.Options.TemplateDir, name)
 		var err error
-		buf, err = ioutil.ReadFile(filename)
+		buf, err = os.ReadFile(filename)
 		if err != nil {
 			return nil, err
 		}

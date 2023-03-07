@@ -14,7 +14,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/gin-contrib/logger"
 	"github.com/gin-gonic/gin"
@@ -127,7 +126,7 @@ func NewGin(path string) (*GinEngine, error) {
 		c.errlog.Level(zerolog.DebugLevel)
 	}
 
-	engine.Use(logger.SetLogger(logger.WithUTC(true), logger.WithLogger(func(cc *gin.Context, out io.Writer, latency time.Duration) zerolog.Logger {
+	engine.Use(logger.SetLogger(logger.WithUTC(true), logger.WithLogger(func(cc *gin.Context, logger zerolog.Logger) zerolog.Logger {
 		return c.stdlog
 	})))
 	engine.Use(ginRecovery(c.errors, c))
